@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	HTTP ServerConfig
+	HTTP    ServerConfig
+	Storage StorageConfig
 }
 
 type ServerConfig struct {
@@ -20,6 +21,11 @@ type ServerConfig struct {
 	IdleTimeout  time.Duration
 }
 
+type StorageConfig struct {
+	Type            string
+	LocalStorageDir string
+}
+
 func LoadConfig() (*Config, error) {
 	config := &Config{
 		HTTP: ServerConfig{
@@ -28,6 +34,10 @@ func LoadConfig() (*Config, error) {
 			ReadTimeout:  getEnvAsDuration("HTTP_READ_TIMEOUT", 5*time.Second),
 			WriteTimeout: getEnvAsDuration("HTTP_WRITE_TIMEOUT", 10*time.Second),
 			IdleTimeout:  getEnvAsDuration("HTTP_IDLE_TIMEOUT", 120*time.Second),
+		},
+		Storage: StorageConfig{
+			Type:            getEnv("STORAGE_TYPE", "local"),
+			LocalStorageDir: getEnv("LOCAL_STORAGE_DIR", "./data/"),
 		},
 	}
 

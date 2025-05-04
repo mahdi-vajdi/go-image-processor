@@ -13,6 +13,7 @@ import (
 	"github.com/mahdi-vajdi/go-image-processor/internal/config"
 	"github.com/mahdi-vajdi/go-image-processor/internal/handler"
 	"github.com/mahdi-vajdi/go-image-processor/internal/router"
+	"github.com/mahdi-vajdi/go-image-processor/internal/storage"
 )
 
 func main() {
@@ -24,6 +25,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configurtation: %v", err)
 	}
+
+	// Set up storage
+	var imageStore storage.Storage
+	if cfg.Storage.Type == "local" {
+		localStore, err := storage.NewLocalStore(cfg.Storage.LocalStorageDir)
+		if err != nil {
+			log.Fatalf("Failed to create local storage: %v", err)
+		}
+		imageStore = localStore
+	} else if cfg.Storage.Type == "s3" {
+		// TODO: implement s3 storage
+	} else {
+		log.Fatalf("Unknown storage type: %s", cfg.Storage.Type)
+	}
+
+	// TODO: use the image storage
+	log.Printf("initialized image store: %v\n", imageStore)
 
 	// Initialize handlers
 	publicHandler := handler.NewPublicHandler()
