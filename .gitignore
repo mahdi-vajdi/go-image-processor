@@ -24,3 +24,6 @@ go.work
 # IDE
 .idea
 
+# Enviroment files
+.env
+

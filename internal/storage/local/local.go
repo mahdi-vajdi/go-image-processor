@@ -1,4 +1,4 @@
-package storage
+package localStorage
 
 import (
 	"context"
@@ -8,13 +8,17 @@ import (
 	"path"
 	"path/filepath"
 	"time"
+
+	"github.com/mahdi-vajdi/go-image-processor/internal/storage"
 )
 
 type LocalStore struct {
 	baseDir string
 }
 
-func NewLocalStore(baseDir string) (*LocalStore, error) {
+var _ storage.Storage = (*LocalStore)(nil)
+
+func NewLocalStore(baseDir string) (storage.Storage, error) {
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(baseDir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("failed to create directory %s, %w", baseDir, err)
@@ -25,11 +29,17 @@ func NewLocalStore(baseDir string) (*LocalStore, error) {
 	}, nil
 }
 
-func (s *LocalStore) Save(ctx context.Context, originalFilename string, data io.Reader) (string, error) {
-	// Generate a unique filename
+func (s *LocalStore) generateLocalPath(originalFilename string) string {
 	extension := filepath.Ext(originalFilename)
 	base := originalFilename[:len(originalFilename)-len(extension)]
 	uniqueFilename := fmt.Sprintf("%s_%d%s", base, time.Now().UnixNano(), extension)
+
+	return uniqueFilename
+}
+
+func (s *LocalStore) Save(ctx context.Context, originalFilename string, data io.Reader) (string, error) {
+	// Generate a unique filename
+	uniqueFilename := s.generateLocalPath(originalFilename)
 	filePath := filepath.Join(s.baseDir, uniqueFilename)
 
 	// Create the file
@@ -67,7 +77,7 @@ func (s *LocalStore) Delete(ctx context.Context, filename string) error {
 
 	if err := os.Remove(filePath); err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("file %s not found: %w", filePath, err)
+			return fmt.Errorf("file %s not found: %w", filePath, os.ErrNotExist)
 		}
 		return fmt.Errorf("falied to delete file %s: %w", filePath, err)
 	}

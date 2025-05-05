@@ -22,8 +22,22 @@ type ServerConfig struct {
 }
 
 type StorageConfig struct {
-	Type            string
-	LocalStorageDir string
+	Type  string
+	Local LocalStorageConfig
+	S3    S3StorageConfig
+}
+
+type LocalStorageConfig struct {
+	BaseDir string
+}
+
+type S3StorageConfig struct {
+	EndpointURL     string
+	Region          string
+	AccessKeyID     string
+	SecretAccessKey string
+	Bucket          string
+	Prefix          string
 }
 
 func LoadConfig() (*Config, error) {
@@ -36,8 +50,18 @@ func LoadConfig() (*Config, error) {
 			IdleTimeout:  getEnvAsDuration("HTTP_IDLE_TIMEOUT", 120*time.Second),
 		},
 		Storage: StorageConfig{
-			Type:            getEnv("STORAGE_TYPE", "local"),
-			LocalStorageDir: getEnv("LOCAL_STORAGE_DIR", "./data/"),
+			Type: getEnv("STORAGE_TYPE", "local"),
+			Local: LocalStorageConfig{
+				BaseDir: getEnv("LOCAL_STORAGE_DIR", "./data/"),
+			},
+			S3: S3StorageConfig{
+				EndpointURL:     getEnv("S3_ENDPOINT_URL", ""),
+				Region:          getEnv("S3_REGION", ""),
+				AccessKeyID:     getEnv("S3_ACCESS_KEY_ID", ""),
+				SecretAccessKey: getEnv("S3_SECRET_ACCESS_KEY", ""),
+				Bucket:          getEnv("S3_BUCKET", "image-processor"),
+				Prefix:          getEnv("S3_PREFIX", ""),
+			},
 		},
 	}
 
