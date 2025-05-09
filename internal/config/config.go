@@ -9,8 +9,9 @@ import (
 )
 
 type Config struct {
-	HTTP    ServerConfig
-	Storage StorageConfig
+	HTTP     ServerConfig
+	Database DatabaseConfig
+	Storage  StorageConfig
 }
 
 type ServerConfig struct {
@@ -19,6 +20,10 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
+}
+
+type DatabaseConfig struct {
+	PostgresDSN string
 }
 
 type StorageConfig struct {
@@ -48,6 +53,10 @@ func LoadConfig() (*Config, error) {
 			ReadTimeout:  getEnvAsDuration("HTTP_READ_TIMEOUT", 5*time.Second),
 			WriteTimeout: getEnvAsDuration("HTTP_WRITE_TIMEOUT", 10*time.Second),
 			IdleTimeout:  getEnvAsDuration("HTTP_IDLE_TIMEOUT", 120*time.Second),
+		},
+		Database: DatabaseConfig{
+			PostgresDSN: getEnv("POSTGRES_DSN",
+				"user=root password=root host=localhost port=5432 dbname=go_image_processor sslmode=disable"),
 		},
 		Storage: StorageConfig{
 			Type: getEnv("STORAGE_TYPE", "local"),

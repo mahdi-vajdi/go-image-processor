@@ -10,15 +10,19 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/mahdi-vajdi/go-image-processor/internal/config"
 	"github.com/mahdi-vajdi/go-image-processor/internal/handler"
 	"github.com/mahdi-vajdi/go-image-processor/internal/router"
 	"github.com/mahdi-vajdi/go-image-processor/internal/storage"
 	"github.com/mahdi-vajdi/go-image-processor/internal/storage/local"
-	s3Storage "github.com/mahdi-vajdi/go-image-processor/internal/storage/s3"
+	"github.com/mahdi-vajdi/go-image-processor/internal/storage/s3"
 )
 
 func main() {
+	appCtx := context.Background()
+
 	if err := config.LoadEnv(""); err != nil {
 		log.Printf("Warning: %v", err)
 	}
@@ -27,6 +31,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configurtation: %v", err)
 	}
+
+	// Set up database
+	db, err := sqlx.Connect("postgres", cfg.Database.PostgresDSN)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	if err := db.PingContext(appCtx); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
+	}
+	log.Println("Connected to database successfully")
 
 	// Set up storage
 	var imageStore storage.Storage
@@ -84,10 +100,10 @@ func main() {
 	log.Println("Shutting down server...")
 
 	// Create a context with timeout for shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.IdleTimeout)
+	appCtx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.IdleTimeout)
 	defer cancel()
 
-	if err = server.Shutdown(ctx); err != nil {
+	if err = server.Shutdown(appCtx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 
