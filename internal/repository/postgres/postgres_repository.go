@@ -19,7 +19,7 @@ type Repository struct {
 
 var _ repository.Repository = (*Repository)(nil)
 
-func NewTaskRepositoryDB(db *sqlx.DB) *Repository {
+func NewTaskRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 

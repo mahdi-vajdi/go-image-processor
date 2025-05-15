@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mahdi-vajdi/go-image-processor/internal/processing"
+	"github.com/mahdi-vajdi/go-image-processor/internal/repository/postgres"
 	"log"
 	"net/http"
 	"os"
@@ -44,6 +46,9 @@ func main() {
 	}
 	log.Println("Connected to database successfully")
 
+	// Set up repository
+	postgresRepo := postgres.NewTaskRepository(db)
+
 	// Set up storage
 	var imageStore storage.Storage
 	if cfg.Storage.Type == "local" {
@@ -70,8 +75,19 @@ func main() {
 
 	log.Printf("initialized image store: %v\n", imageStore)
 
+	// Set up processing service
+	processingService := processing.NewService(postgresRepo, imageStore, processing.ServiceConfig{
+		WorkerPoolSize:  0,
+		PollingInterval: 0,
+		TaskBatchSize:   0,
+		TargetSizes:     nil,
+		TargetFormats:   nil,
+	})
+
+	processingService.Start()
+
 	// Initialize handlers
-	publicHandler := handler.NewPublicHandler(imageStore)
+	publicHandler := handler.NewPublicHandler()
 
 	r := router.New(publicHandler)
 

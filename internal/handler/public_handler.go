@@ -2,18 +2,12 @@ package handler
 
 import (
 	"net/http"
-
-	"github.com/mahdi-vajdi/go-image-processor/internal/storage"
 )
 
-type publicHandler struct {
-	imageStore storage.Storage
-}
+type publicHandler struct{}
 
-func NewPublicHandler(imageStore storage.Storage) PublicHandler {
-	return &publicHandler{
-		imageStore: imageStore,
-	}
+func NewPublicHandler() PublicHandler {
+	return &publicHandler{}
 }
 
 func (p publicHandler) Ping(w http.ResponseWriter, r *http.Request) {
