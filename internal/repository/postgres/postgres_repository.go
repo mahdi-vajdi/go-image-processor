@@ -19,7 +19,7 @@ type Repository struct {
 
 var _ repository.Repository = (*Repository)(nil)
 
-func NewTaskRepository(db *sqlx.DB) *Repository {
+func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
@@ -31,7 +31,7 @@ func (r *Repository) CreateTask(ctx context.Context, task *model.ImageProcessing
 	task.Status = model.StatusPending
 
 	query := `INSERT INTO image_processing_tasks (id, original_filename, storage_key, status, created_at, updated_at, error_message)
-			  VALUES (id, original_filename, storage_key, status, created_at, updated_at, error_message)
+			  VALUES (:id, :original_filename, :storage_key, :status, :created_at, :updated_at, :error_message)
 			  `
 
 	_, err := r.db.NamedExecContext(ctx, query, task)
@@ -52,7 +52,7 @@ func (r *Repository) GetTaskByID(ctx context.Context, id string) (*model.ImagePr
 	err := r.db.GetContext(ctx, task, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("task with ID %s was not found", id)
+			return nil, fmt.Errorf("task with ID %s was not found: %w", id, repository.ErrTaskNotFound)
 		}
 		return nil, fmt.Errorf("failed to get task by ID %s: %w", id, err)
 	}
@@ -89,7 +89,7 @@ func (r *Repository) GetPendingTasks(ctx context.Context, limit int) ([]model.Im
 			  LIMIT $2
 	`
 
-	err := r.db.SelectContext(ctx, tasks, query, model.StatusPending, limit)
+	err := r.db.SelectContext(ctx, &tasks, query, model.StatusPending, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pending tasks: %w", err)
 	}

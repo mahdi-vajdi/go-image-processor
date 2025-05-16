@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	HTTP     ServerConfig
-	Database DatabaseConfig
-	Storage  StorageConfig
+	HTTP              ServerConfig
+	Database          DatabaseConfig
+	Storage           StorageConfig
+	ProcessingService ProcessingServiceConfig
 }
 
 type ServerConfig struct {
@@ -45,6 +46,12 @@ type S3StorageConfig struct {
 	Prefix          string
 }
 
+type ProcessingServiceConfig struct {
+	WorkerPoolSize  int
+	PollingInterval time.Duration
+	TaskBatchSize   int
+}
+
 func LoadConfig() (*Config, error) {
 	config := &Config{
 		HTTP: ServerConfig{
@@ -71,6 +78,11 @@ func LoadConfig() (*Config, error) {
 				Bucket:          getEnv("S3_BUCKET", "image-processor"),
 				Prefix:          getEnv("S3_PREFIX", ""),
 			},
+		},
+		ProcessingService: ProcessingServiceConfig{
+			WorkerPoolSize:  getEnvAsInt("PROCESSING_WORKER_POOL_SIZE", 5),
+			PollingInterval: getEnvAsDuration("PROCESSING_POLLING_INTERVAL", 5*time.Second),
+			TaskBatchSize:   getEnvAsInt("PROCESSING_TASK_BATCH_SIZE", 10),
 		},
 	}
 

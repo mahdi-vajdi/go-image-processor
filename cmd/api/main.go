@@ -4,19 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mahdi-vajdi/go-image-processor/internal/processing"
-	"github.com/mahdi-vajdi/go-image-processor/internal/repository/postgres"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/mahdi-vajdi/go-image-processor/internal/processing"
+	"github.com/mahdi-vajdi/go-image-processor/internal/repository/postgres"
+	"github.com/mahdi-vajdi/go-image-processor/internal/router"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/mahdi-vajdi/go-image-processor/internal/config"
 	"github.com/mahdi-vajdi/go-image-processor/internal/handler"
-	"github.com/mahdi-vajdi/go-image-processor/internal/router"
 	"github.com/mahdi-vajdi/go-image-processor/internal/storage"
 	"github.com/mahdi-vajdi/go-image-processor/internal/storage/local"
 	"github.com/mahdi-vajdi/go-image-processor/internal/storage/s3"
@@ -34,7 +35,7 @@ func main() {
 		log.Fatalf("Failed to load configurtation: %v", err)
 	}
 
-	// Set up database
+	// Database
 	db, err := sqlx.Connect("postgres", cfg.Database.PostgresDSN)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -46,10 +47,10 @@ func main() {
 	}
 	log.Println("Connected to database successfully")
 
-	// Set up repository
-	postgresRepo := postgres.NewTaskRepository(db)
+	// Repository
+	repo := postgres.NewRepository(db)
 
-	// Set up storage
+	// Storage
 	var imageStore storage.Storage
 	if cfg.Storage.Type == "local" {
 		localStore, err := localStorage.NewLocalStore(cfg.Storage.Local.BaseDir)
@@ -73,23 +74,18 @@ func main() {
 		log.Fatalf("Unknown storage type: %s", cfg.Storage.Type)
 	}
 
-	log.Printf("initialized image store: %v\n", imageStore)
-
-	// Set up processing service
-	processingService := processing.NewService(postgresRepo, imageStore, processing.ServiceConfig{
-		WorkerPoolSize:  0,
-		PollingInterval: 0,
-		TaskBatchSize:   0,
-		TargetSizes:     nil,
-		TargetFormats:   nil,
+	// Processing service
+	processingService := processing.NewService(repo, imageStore, processing.ServiceConfig{
+		WorkerPoolSize:  cfg.ProcessingService.WorkerPoolSize,
+		PollingInterval: cfg.ProcessingService.PollingInterval,
+		TaskBatchSize:   cfg.ProcessingService.TaskBatchSize,
 	})
-
 	processingService.Start()
 
-	// Initialize handlers
-	publicHandler := handler.NewPublicHandler()
+	// Handler
+	apiHandler := handler.NewHandler(repo, imageStore)
 
-	r := router.New(publicHandler)
+	r := router.New(apiHandler)
 
 	serverAddr := fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port)
 	server := &http.Server{

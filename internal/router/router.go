@@ -10,13 +10,13 @@ import (
 
 type Router struct {
 	*mux.Router
-	publicHandler handler.PublicHandler
+	handler handler.Handler
 }
 
-func New(publicHandler handler.PublicHandler) *Router {
+func New(handler handler.Handler) *Router {
 	r := &Router{
-		Router:        mux.NewRouter(),
-		publicHandler: publicHandler,
+		Router:  mux.NewRouter(),
+		handler: handler,
 	}
 
 	r.Use(middleware.Logging)
@@ -33,7 +33,12 @@ func (r *Router) setupRoutes() {
 	apiV1 := api.PathPrefix("/v1").Subrouter()
 
 	publicApiV1 := apiV1.PathPrefix("/public").Subrouter()
-	publicApiV1.HandleFunc("/ping", r.publicHandler.Ping).Methods(http.MethodGet)
+	publicApiV1.HandleFunc("/ping", r.handler.Ping).Methods(http.MethodGet)
+
+	imageApiV1 := apiV1.PathPrefix("/image").Subrouter()
+	imageApiV1.HandleFunc("/upload", r.handler.UploadImage).Methods(http.MethodPost)
+	imageApiV1.HandleFunc("/status/{taskId}", r.handler.GetImageStatus).Methods(http.MethodGet)
+	imageApiV1.HandleFunc("/{imageKey}", r.handler.GetImage).Methods(http.MethodGet)
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {

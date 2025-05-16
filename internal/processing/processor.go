@@ -15,8 +15,6 @@ type ServiceConfig struct {
 	WorkerPoolSize  int
 	PollingInterval time.Duration
 	TaskBatchSize   int
-	TargetSizes     []int
-	TargetFormats   []string
 }
 
 type Service struct {
@@ -119,6 +117,7 @@ func (s *Service) dispatcher() {
 
 		if len(tasks) == 0 {
 			log.Println("No pending tasks were found. Waiting...")
+			time.Sleep(s.config.PollingInterval)
 			continue
 		}
 

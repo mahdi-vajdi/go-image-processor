@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/mahdi-vajdi/go-image-processor/internal/model"
 )
@@ -15,3 +16,5 @@ type Repository interface {
 
 	GetPendingTasks(ctx context.Context, limit int) ([]model.ImageProcessingTask, error)
 }
+
+var ErrTaskNotFound = errors.New("repository: task not found")
