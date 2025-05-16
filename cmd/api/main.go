@@ -87,6 +87,7 @@ func main() {
 
 	r := router.New(apiHandler)
 
+	// Server
 	serverAddr := fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port)
 	server := &http.Server{
 		Addr:         serverAddr,
@@ -97,28 +98,34 @@ func main() {
 	}
 
 	go func() {
-		fmt.Printf("Starting http server on %s\n", serverAddr)
+		log.Printf("Starting http server on %s\n", serverAddr)
 		if err := server.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Failed to start the HTTP server: %v", err)
 		}
 
 	}()
 
-	// Setup graceful shutdown
-	quitChan := make(chan os.Signal, 1)
+	// Graceful Shutdown
+	quitChan := make(chan os.Signal, 1) // Retrieve OS signals
 	signal.Notify(quitChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block the main
 	<-quitChan
 
-	log.Println("Shutting down server...")
+	log.Println("Received shutdown signal. Initiating graceful shutdown...")
 
 	// Create a context with timeout for shutdown
-	appCtx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.IdleTimeout)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.App.ShutdownTimeout)
+	defer shutdownCancel()
 
-	if err = server.Shutdown(appCtx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+	if err = server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("HTTP server shutdown failed: %v", err)
 	}
+	log.Println("HTTP server stopped.")
 
-	log.Println("Server exited gracefully")
+	log.Println("Shutting down image processing service...")
+	processingService.Stop(shutdownCtx)
+	log.Println("Image processing service stopped.")
 
+	log.Println("Application shutdown complete.")
 }

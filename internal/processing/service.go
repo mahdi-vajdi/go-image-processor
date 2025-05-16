@@ -68,7 +68,7 @@ func (s *Service) Start() {
 	log.Printf("Image processing service started with %d workers and polling every %s", s.config.WorkerPoolSize, s.config.PollingInterval)
 }
 
-func (s *Service) Stop() {
+func (s *Service) Stop(ctx context.Context) {
 	log.Println("stopping image processing service...")
 
 	// Signal the dispatcher to stop
@@ -117,7 +117,7 @@ func (s *Service) dispatcher() {
 
 		if len(tasks) == 0 {
 			log.Println("No pending tasks were found. Waiting...")
-			time.Sleep(s.config.PollingInterval)
+			// time.Sleep(s.config.PollingInterval)
 			continue
 		}
 

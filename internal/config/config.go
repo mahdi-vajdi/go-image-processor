@@ -9,10 +9,16 @@ import (
 )
 
 type Config struct {
+	App               AppConfig
 	HTTP              ServerConfig
 	Database          DatabaseConfig
 	Storage           StorageConfig
 	ProcessingService ProcessingServiceConfig
+}
+
+type AppConfig struct {
+	DebugMode       bool
+	ShutdownTimeout time.Duration
 }
 
 type ServerConfig struct {
@@ -54,6 +60,10 @@ type ProcessingServiceConfig struct {
 
 func LoadConfig() (*Config, error) {
 	config := &Config{
+		App: AppConfig{
+			DebugMode:       getEnvAsBool("APP_DEBUG_MODE", false),
+			ShutdownTimeout: getEnvAsDuration("APP_SHUTDOWN_TIMEOUT", 5*time.Second),
+		},
 		HTTP: ServerConfig{
 			Host:         getEnv("HTTP_HOST", "0.0.0.0"),
 			Port:         getEnvAsInt("HTTP_PORT", 8080),
