@@ -25,21 +25,34 @@ type S3Store struct {
 
 var _ storage.Storage = (*S3Store)(nil)
 
-func NewS3Store(endpointURL string, accessKey string, secretKey string, bucket string, prefix string) (storage.Storage, error) {
+func NewS3Store(ctx context.Context, endpointURL string, accessKey string, secretKey string, bucket string, prefix string, region string) (storage.Storage, error) {
 	if accessKey == "" || secretKey == "" {
 		return nil, fmt.Errorf("credentials for S3 are empty")
 	}
+	if bucket == "" {
+		return nil, fmt.Errorf("s3 bucket name cannot be empty")
+	}
+	if region == "" {
+		fmt.Println("Warning: S3 region not provided. Using 'us-east-1' as default for signing.")
+		region = "us-east-1"
+	}
 
+	// Configure credentials provider and region
 	credsProvider := credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")
-
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithCredentialsProvider(credsProvider))
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithCredentialsProvider(credsProvider),
+		config.WithRegion(region),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create S3 store: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(endpointURL)
-		o.EndpointResolverV2 = &resolverV2{}
+		if endpointURL != "" {
+			o.BaseEndpoint = aws.String(endpointURL)
+			o.UsePathStyle = true
+			// o.HTTPClient = &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+		}
 	})
 
 	return &S3Store{

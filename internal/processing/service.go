@@ -62,7 +62,7 @@ func (s *Service) Start() {
 
 	for i := 0; i < s.config.WorkerPoolSize; i++ {
 		s.wg.Add(1)
-		s.worker(i + 1) // Pass the ID
+		go s.worker(i + 1) // Pass the ID
 	}
 
 	log.Printf("Image processing service started with %d workers and polling every %s", s.config.WorkerPoolSize, s.config.PollingInterval)
@@ -84,7 +84,7 @@ func (s *Service) Stop(ctx context.Context) {
 	select {
 	case <-done:
 		log.Println("All image processing tasks finished")
-	case <-s.ctx.Done():
+	case <-ctx.Done():
 		log.Println("Image processing service shutdown context timed out. Some tasks may not have finished.")
 	}
 
@@ -117,7 +117,7 @@ func (s *Service) dispatcher() {
 
 		if len(tasks) == 0 {
 			log.Println("No pending tasks were found. Waiting...")
-			// time.Sleep(s.config.PollingInterval)
+			time.Sleep(s.config.PollingInterval)
 			continue
 		}
 

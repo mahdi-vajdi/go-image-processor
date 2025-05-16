@@ -46,7 +46,7 @@ func (s *Service) worker(id int) {
 			log.Printf("Worker #%d: Task %s completed successfully", id, task.ID)
 		}
 
-		updateContext, cancel := context.WithTimeout(s.ctx, 10*time.Second)
+		updateContext, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		err = s.repo.UpdateTaskStatus(updateContext, task.ID, status, errorMessage)
 		cancel()
 
@@ -56,15 +56,14 @@ func (s *Service) worker(id int) {
 		}
 	}
 
-	log.Printf("Worker @%d exiting.", id)
+	log.Printf("Worker #%d exiting.", id)
 }
 
 func (s *Service) processTask(ctx context.Context, task *model.ImageProcessingTask) error {
 	// Check if the context has been cancelled before starting or during long operations.
 	select {
-	case <-s.ctx.Done():
-		return s.ctx.Err()
-
+	case <-ctx.Done():
+		return ctx.Err()
 	default:
 		// Context is not done
 	}
@@ -74,7 +73,7 @@ func (s *Service) processTask(ctx context.Context, task *model.ImageProcessingTa
 	// Download the file
 	originalImageReader, err := s.storage.Get(ctx, task.StorageKey)
 	if err != nil {
-		return fmt.Errorf("failed to donwload oringinal image %s: %w", task.StorageKey, err)
+		return fmt.Errorf("failed to download original image %s: %w", task.StorageKey, err)
 	}
 	defer originalImageReader.Close()
 
@@ -88,8 +87,8 @@ func (s *Service) processTask(ctx context.Context, task *model.ImageProcessingTa
 	log.Printf("Image decoded successfully (Format: %s, Size: %dx%d)", format, img.Bounds().Dx(), img.Bounds().Dy())
 
 	// Resize the image
-	targetWith := 800
-	resizedImage := imaging.Resize(img, targetWith, 0, imaging.Lanczos)
+	targetWidth := 800
+	resizedImage := imaging.Resize(img, targetWidth, 0, imaging.Lanczos)
 
 	log.Printf("Image resized to %dx%d", resizedImage.Bounds().Dx(), resizedImage.Bounds().Dy())
 

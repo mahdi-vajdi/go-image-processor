@@ -60,11 +60,13 @@ func main() {
 		imageStore = localStore
 	} else if cfg.Storage.Type == "s3" {
 		s3Store, err := s3Storage.NewS3Store(
+			appCtx,
 			cfg.Storage.S3.EndpointURL,
 			cfg.Storage.S3.AccessKeyID,
 			cfg.Storage.S3.SecretAccessKey,
 			cfg.Storage.S3.Bucket,
 			cfg.Storage.S3.Prefix,
+			cfg.Storage.S3.Region,
 		)
 		if err != nil {
 			log.Fatalf("Failed to create S3 storage: %v", err)
