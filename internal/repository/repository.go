@@ -15,6 +15,8 @@ type Repository interface {
 	UpdateTaskStatus(ctx context.Context, id int64, status model.TaskStatus, errorMessage string) error
 
 	GetPendingTasks(ctx context.Context, limit int) ([]model.ImageProcessingTask, error)
+
+	CreateProcessedImageDetail(ctx context.Context, detail *model.ProcessedImage) (*model.ProcessedImage, error)
 }
 
 var ErrTaskNotFound = errors.New("repository: task not found")

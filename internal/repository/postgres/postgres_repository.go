@@ -28,20 +28,21 @@ func (r *Repository) CreateTask(ctx context.Context, task *model.ImageProcessing
 	task.UpdatedAt = now
 	task.Status = model.StatusPending
 
-	query := `INSERT INTO image_processing_tasks (original_filename, storage_key, status, error_message, created_at, updated_at) 
+	query := `
+		INSERT INTO image_processing_tasks (original_filename, storage_key, status, error_message, created_at, updated_at) 
 		VALUES (:original_filename, :storage_key, :status, :error_message, :created_at, :updated_at) 
 		RETURNING id, original_filename, storage_key, status, error_message, created_at, updated_at
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create named statement: %w", err)
+		return nil, fmt.Errorf("failed to prepare named statement for task creation: %w", err)
 	}
 	defer stmt.Close()
 
 	err = stmt.GetContext(ctx, task, task)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute insert task: %w", err)
+		return nil, fmt.Errorf("failed to execute insert and scan returned task: %w", err)
 	}
 
 	return task, nil
@@ -49,10 +50,11 @@ func (r *Repository) CreateTask(ctx context.Context, task *model.ImageProcessing
 
 func (r *Repository) GetTaskByID(ctx context.Context, id int64) (*model.ImageProcessingTask, error) {
 	var task model.ImageProcessingTask
-	query := `SELECT id, original_filename, storage_key, status, created_at, updated_at, error_message 
-			  FROM image_processing_tasks 
-			  WHERE id = $1
-			  `
+	query := `
+		SELECT id, original_filename, storage_key, status, error_message, created_at, updated_at 
+		FROM image_processing_tasks 
+		WHERE id = $1
+	`
 
 	err := r.db.GetContext(ctx, task, query, id)
 	if err != nil {
@@ -87,11 +89,12 @@ func (r *Repository) UpdateTaskStatus(ctx context.Context, id int64, status mode
 
 func (r *Repository) GetPendingTasks(ctx context.Context, limit int) ([]model.ImageProcessingTask, error) {
 	var tasks []model.ImageProcessingTask
-	query := `SELECT id, original_filename, storage_key, status, created_at, updated_at, error_message 
-			  FROM image_processing_tasks 
-			  WHERE status = $1
-			  ORDER BY created_at 
-			  LIMIT $2
+	query := `
+		SELECT id, original_filename, storage_key, status, created_at, updated_at 
+		FROM image_processing_tasks 
+		WHERE status = $1
+		ORDER BY created_at 
+		LIMIT $2
 	`
 
 	err := r.db.SelectContext(ctx, &tasks, query, model.StatusPending, limit)
@@ -100,4 +103,29 @@ func (r *Repository) GetPendingTasks(ctx context.Context, limit int) ([]model.Im
 	}
 
 	return tasks, nil
+}
+
+func (r *Repository) CreateProcessedImageDetail(ctx context.Context, detail *model.ProcessedImage) (*model.ProcessedImage, error) {
+	now := time.Now()
+	detail.CreatedAt = now
+	detail.UpdatedAt = now
+
+	query := `
+		INSERT INTO processed_images (task_id, format, size, storage_key, created_at, updated_at) 
+		VALUES (:task_id, :format, :size, :storage_key, :created_at, :updated_at)
+		RETURNING id, task_id, format, size, storage_key, created_at, updated_at
+	`
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare named statement for task detail creation: %w", err)
+	}
+
+	err = stmt.GetContext(ctx, detail, detail)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute insert and scan returned task: %w", err)
+	}
+
+	return detail, nil
+
 }

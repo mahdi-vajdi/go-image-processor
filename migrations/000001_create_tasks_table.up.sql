@@ -1,4 +1,4 @@
-CREATE TABLE image_processing_tasks
+CREATE TABLE IF NOT EXISTS image_processing_tasks
 (
     id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     original_filename VARCHAR(255) NOT NULL,

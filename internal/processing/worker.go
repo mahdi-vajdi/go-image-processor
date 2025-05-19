@@ -119,7 +119,17 @@ func (s *Service) processTask(ctx context.Context, task *model.ImageProcessingTa
 
 	log.Printf("Processed image uploaded successfully with key: %s", processedStorageKey)
 
-	// TODO: save the details for the uploaded image in the database
+	// Save the processedImage
+	processedImage := model.ProcessedImage{
+		TaskID:     task.ID,
+		Format:     format,
+		Size:       fmt.Sprintf("%dx%d", resizedImage.Bounds().Dx(), resizedImage.Bounds().Dy()),
+		StorageKey: processedStorageKey,
+	}
+	_, err = s.repo.CreateProcessedImageDetail(ctx, &processedImage)
+	if err != nil {
+		return fmt.Errorf("failed to save processed image detail: %w", err)
+	}
 
 	return nil
 }

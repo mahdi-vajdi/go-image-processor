@@ -20,14 +20,17 @@ type ImageProcessingTask struct {
 	ErrorMessage     string     `db:"error_message"`
 	CreatedAt        time.Time  `db:"created_at"`
 	UpdatedAt        time.Time  `db:"updated_at"`
+
+	// Relation
+	processedImage *ProcessedImage
 }
 
-type ProcessedImageDetails struct {
-	ID         string
-	TaskID     string
-	Format     string `db:"format"`
-	Size       string `db:"size"`
-	StorageKey string `db:"storage_key"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+type ProcessedImage struct {
+	ID         int64     `db:"id"`
+	TaskID     int64     `db:"task_id"`
+	Format     string    `db:"format"`
+	Size       string    `db:"size"`
+	StorageKey string    `db:"storage_key"`
+	CreatedAt  time.Time `db:"created_at"`
+	UpdatedAt  time.Time `db:"updated_at"`
 }
