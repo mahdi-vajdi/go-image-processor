@@ -119,8 +119,6 @@ func (s *S3Store) Get(ctx context.Context, key string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("failed to get file from S3 bucket %s with key %s: %w", s.bucket, key, err)
 	}
 
-	defer resp.Body.Close()
-
 	return resp.Body, nil
 }
 
