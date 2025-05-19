@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -87,7 +88,7 @@ func (h *handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ResponseJSON(w, http.StatusAccepted, map[string]string{"id": createdTask.ID, "status": string(createdTask.Status), "createdAt": createdTask.CreatedAt.String()})
+	ResponseJSON(w, http.StatusAccepted, map[string]string{"id": strconv.FormatInt(createdTask.ID, 10), "status": string(createdTask.Status), "createdAt": createdTask.CreatedAt.String()})
 }
 
 func (h *handler) GetImageStatus(w http.ResponseWriter, r *http.Request) {
@@ -95,9 +96,15 @@ func (h *handler) GetImageStatus(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	vars := mux.Vars(r)
-	taskID := vars["taskId"]
-	if taskID == "" {
+	taskIDString := vars["taskId"]
+	if taskIDString == "" {
 		ErrorJSON(w, http.StatusBadRequest, "missing task ID")
+		return
+	}
+
+	taskID, err := strconv.ParseInt(taskIDString, 10, 64)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "invalid task ID")
 		return
 	}
 

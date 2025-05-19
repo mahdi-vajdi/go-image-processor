@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/mahdi-vajdi/go-image-processor/internal/model"
 	"github.com/mahdi-vajdi/go-image-processor/internal/repository"
@@ -24,25 +23,31 @@ func NewRepository(db *sqlx.DB) *Repository {
 }
 
 func (r *Repository) CreateTask(ctx context.Context, task *model.ImageProcessingTask) (*model.ImageProcessingTask, error) {
-	task.ID = uuid.New().String()
 	now := time.Now()
 	task.CreatedAt = now
 	task.UpdatedAt = now
 	task.Status = model.StatusPending
 
-	query := `INSERT INTO image_processing_tasks (id, original_filename, storage_key, status, created_at, updated_at, error_message)
-			  VALUES (:id, :original_filename, :storage_key, :status, :created_at, :updated_at, :error_message)
-			  `
+	query := `INSERT INTO image_processing_tasks (original_filename, storage_key, status, error_message, created_at, updated_at) 
+		VALUES (:original_filename, :storage_key, :status, :error_message, :created_at, :updated_at) 
+		RETURNING id, original_filename, storage_key, status, error_message, created_at, updated_at
+	`
 
-	_, err := r.db.NamedExecContext(ctx, query, task)
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task: %w", err)
+		return nil, fmt.Errorf("failed to create named statement: %w", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.GetContext(ctx, task, task)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute insert task: %w", err)
 	}
 
 	return task, nil
 }
 
-func (r *Repository) GetTaskByID(ctx context.Context, id string) (*model.ImageProcessingTask, error) {
+func (r *Repository) GetTaskByID(ctx context.Context, id int64) (*model.ImageProcessingTask, error) {
 	var task model.ImageProcessingTask
 	query := `SELECT id, original_filename, storage_key, status, created_at, updated_at, error_message 
 			  FROM image_processing_tasks 
@@ -60,7 +65,7 @@ func (r *Repository) GetTaskByID(ctx context.Context, id string) (*model.ImagePr
 	return &task, nil
 }
 
-func (r *Repository) UpdateTaskStatus(ctx context.Context, id string, status model.TaskStatus, errorMessage string) error {
+func (r *Repository) UpdateTaskStatus(ctx context.Context, id int64, status model.TaskStatus, errorMessage string) error {
 	query := `UPDATE image_processing_tasks SET status = $1, error_message = $2, updated_at = DEFAULT WHERE id = $3`
 
 	result, err := r.db.ExecContext(ctx, query, status, errorMessage, id)

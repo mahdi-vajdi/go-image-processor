@@ -13,11 +13,21 @@ const (
 )
 
 type ImageProcessingTask struct {
-	ID               string     `db:"id"`
+	ID               int64      `db:"id"`
 	OriginalFilename string     `db:"original_filename"`
 	StorageKey       string     `db:"storage_key"`
 	Status           TaskStatus `db:"status"`
+	ErrorMessage     string     `db:"error_message"`
 	CreatedAt        time.Time  `db:"created_at"`
 	UpdatedAt        time.Time  `db:"updated_at"`
-	ErrorMessage     string     `db:"error_message"`
+}
+
+type ProcessedImageDetails struct {
+	ID         string
+	TaskID     string
+	Format     string `db:"format"`
+	Size       string `db:"size"`
+	StorageKey string `db:"storage_key"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }

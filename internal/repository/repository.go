@@ -10,9 +10,9 @@ import (
 type Repository interface {
 	CreateTask(ctx context.Context, task *model.ImageProcessingTask) (*model.ImageProcessingTask, error)
 
-	GetTaskByID(ctx context.Context, id string) (*model.ImageProcessingTask, error)
+	GetTaskByID(ctx context.Context, id int64) (*model.ImageProcessingTask, error)
 
-	UpdateTaskStatus(ctx context.Context, id string, status model.TaskStatus, errorMessage string) error
+	UpdateTaskStatus(ctx context.Context, id int64, status model.TaskStatus, errorMessage string) error
 
 	GetPendingTasks(ctx context.Context, limit int) ([]model.ImageProcessingTask, error)
 }

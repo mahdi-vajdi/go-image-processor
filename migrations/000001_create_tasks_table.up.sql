@@ -1,6 +1,6 @@
 CREATE TABLE image_processing_tasks
 (
-    id                VARCHAR(36) PRIMARY KEY,
+    id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     original_filename VARCHAR(255) NOT NULL,
     storage_key       VARCHAR(255) NOT NULL,
     status            VARCHAR(50)  NOT NULL,
