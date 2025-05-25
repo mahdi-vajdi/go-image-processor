@@ -56,7 +56,7 @@ func (r *Repository) GetTaskByID(ctx context.Context, id int64) (*model.ImagePro
 		WHERE id = $1
 	`
 
-	err := r.db.GetContext(ctx, task, query, id)
+	err := r.db.GetContext(ctx, &task, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("task with ID %s was not found: %w", id, repository.ErrTaskNotFound)

@@ -57,9 +57,6 @@ func NewService(repo repository.Repository, storage storage.Storage, config Serv
 func (s *Service) Start() {
 	log.Println("Starting image processing service...")
 
-	s.wg.Add(1)
-	go s.dispatcher()
-
 	for i := 0; i < s.config.WorkerPoolSize; i++ {
 		s.wg.Add(1)
 		go s.worker(i + 1) // Pass the ID
@@ -71,8 +68,8 @@ func (s *Service) Start() {
 func (s *Service) Stop(ctx context.Context) {
 	log.Println("stopping image processing service...")
 
-	// Signal the dispatcher to stop
-	s.cancel()
+	// Signal workers to stop
+	close(s.taskChan)
 
 	done := make(chan struct{})
 	go func() {
@@ -91,51 +88,11 @@ func (s *Service) Stop(ctx context.Context) {
 	log.Println("Image processing service stopped.")
 }
 
-func (s *Service) dispatcher() {
-	defer s.wg.Done()
-
-	log.Println("Dispatcher started")
-
-	// Loop indefinitely until the service context is cancelled.
-	for {
-		select {
-		case <-s.ctx.Done():
-			log.Println("dispatcher received shutdown signal. Closing the task channel...")
-			close(s.taskChan)
-			return
-
-		default:
-			// Continue
-		}
-
-		tasks, err := s.repo.GetPendingTasks(s.ctx, s.config.TaskBatchSize)
-		if err != nil {
-			log.Printf("Error fetching pending task: %v. Retrying in %s", err, s.config.PollingInterval)
-			time.Sleep(s.config.PollingInterval)
-			continue // Start the next iteration
-		}
-
-		if len(tasks) == 0 {
-			log.Println("No pending tasks were found. Waiting...")
-			time.Sleep(s.config.PollingInterval)
-			continue
-		}
-
-		log.Printf("Dispatcher fetched %d tasks", len(tasks))
-
-		// Send the fetched tasks to the task channel
-		for _, task := range tasks {
-			select {
-			case s.taskChan <- task:
-			// Task successfully was sent to the channel
-			case <-s.ctx.Done():
-				log.Printf("Dispatcher shutting down while sending tasks. Task %s might not be processed from this batch", task.ID)
-				close(s.taskChan)
-				return
-			}
-		}
-
-		// Wait for the polling interval before fetching the next batch
-		time.Sleep(s.config.PollingInterval)
+func (s *Service) SubmitTask(task model.ImageProcessingTask) {
+	select {
+	case s.taskChan <- task:
+		log.Printf("task %d submistted to processing channel.", task.ID)
+	case <-s.ctx.Done():
+		log.Printf("Could not submit task %d. Service is shutting down.", task.ID)
 	}
 }

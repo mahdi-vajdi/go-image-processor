@@ -92,11 +92,10 @@ This project has several areas for potential enhancement, including but not limi
 * **Configurable Transformations:** Allow users to specify image processing parameters.
 * **Wider Format Support:** Handle more input/output image formats.
 * **Task Prioritization:** Implement priority queues for tasks.
-* **Event-Driven Architecture:** Replace polling with message queues (e.g., RabbitMQ, Kafka).
 * **Dynamic Worker Scaling:** Adjust the number of workers based on load.
 * **Enhanced Input Validation:** Stricter checks for uploads.
 * **Authentication/Authorization:** Secure API endpoints.
 
 ## License
 
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+This project is licensed under the [MIT License](https://github.com/mahdi-vajdi/go-image-processor/blob/master/LICENSE).

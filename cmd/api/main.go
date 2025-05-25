@@ -85,7 +85,7 @@ func main() {
 	processingService.Start()
 
 	// Handler
-	apiHandler := handler.NewHandler(repo, imageStore)
+	apiHandler := handler.NewHandler(repo, imageStore, processingService)
 
 	r := router.New(apiHandler)
 

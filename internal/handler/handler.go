@@ -15,6 +15,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mahdi-vajdi/go-image-processor/internal/model"
+	"github.com/mahdi-vajdi/go-image-processor/internal/processing"
 	"github.com/mahdi-vajdi/go-image-processor/internal/repository"
 	"github.com/mahdi-vajdi/go-image-processor/internal/storage"
 )
@@ -29,12 +30,14 @@ type Handler interface {
 type handler struct {
 	repo       repository.Repository
 	imageStore storage.Storage
+	processor  *processing.Service
 }
 
-func NewHandler(repo repository.Repository, imageStore storage.Storage) Handler {
+func NewHandler(repo repository.Repository, imageStore storage.Storage, processor *processing.Service) Handler {
 	return &handler{
 		repo:       repo,
 		imageStore: imageStore,
+		processor:  processor,
 	}
 }
 
@@ -87,6 +90,8 @@ func (h *handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusInternalServerError, fmt.Sprintf("failed to create processing task: %v", err))
 		return
 	}
+
+	h.processor.SubmitTask(*createdTask)
 
 	ResponseJSON(w, http.StatusAccepted, map[string]string{"id": strconv.FormatInt(createdTask.ID, 10), "status": string(createdTask.Status), "createdAt": createdTask.CreatedAt.String()})
 }

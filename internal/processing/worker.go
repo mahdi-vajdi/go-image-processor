@@ -43,7 +43,7 @@ func (s *Service) worker(id int) {
 
 			log.Printf("Worker #%d: Task %s failed: %v", id, task.ID, processErr)
 		} else {
-			log.Printf("Worker #%d: Task %s completed successfully", id, task.ID)
+			log.Printf("Worker #%d: Task %d completed successfully", id, task.ID)
 		}
 
 		updateContext, cancel := context.WithTimeout(context.Background(), 10*time.Second)
