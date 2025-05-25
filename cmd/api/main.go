@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/mahdi-vajdi/go-image-processor/internal/platform/validator"
 	"github.com/mahdi-vajdi/go-image-processor/internal/processing"
 	"github.com/mahdi-vajdi/go-image-processor/internal/repository/postgres"
 	"github.com/mahdi-vajdi/go-image-processor/internal/router"
@@ -84,8 +85,11 @@ func main() {
 	})
 	processingService.Start()
 
+	// Validator
+	appValidator := validator.New()
+
 	// Handler
-	apiHandler := handler.NewHandler(repo, imageStore, processingService)
+	apiHandler := handler.NewHandler(repo, imageStore, processingService, appValidator)
 
 	r := router.New(apiHandler)
 

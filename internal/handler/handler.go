@@ -15,6 +15,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mahdi-vajdi/go-image-processor/internal/model"
+	"github.com/mahdi-vajdi/go-image-processor/internal/platform/validator"
 	"github.com/mahdi-vajdi/go-image-processor/internal/processing"
 	"github.com/mahdi-vajdi/go-image-processor/internal/repository"
 	"github.com/mahdi-vajdi/go-image-processor/internal/storage"
@@ -31,13 +32,15 @@ type handler struct {
 	repo       repository.Repository
 	imageStore storage.Storage
 	processor  *processing.Service
+	validate   *validator.Validator
 }
 
-func NewHandler(repo repository.Repository, imageStore storage.Storage, processor *processing.Service) Handler {
+func NewHandler(repo repository.Repository, imageStore storage.Storage, processor *processing.Service, val *validator.Validator) Handler {
 	return &handler{
 		repo:       repo,
 		imageStore: imageStore,
 		processor:  processor,
+		validate:   val,
 	}
 }
 
